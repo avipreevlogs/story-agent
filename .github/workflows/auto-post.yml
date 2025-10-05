@@ -1,0 +1,39 @@
+name: YouTube Master Auto Post v3 (1 video per run, 4 runs/day)
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC
+    - cron: '0 8 * * *'   # 08:00 UTC
+    - cron: '0 14 * * *'  # 14:00 UTC
+    - cron: '0 20 * * *'  # 20:00 UTC
+  workflow_dispatch:
+
+jobs:
+  build-and-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install system deps (ffmpeg, imagemagick, espeak)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg imagemagick espeak
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Run generator + uploader (single video)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+        run: |
+          node runner_generate_and_upload_v3.js
